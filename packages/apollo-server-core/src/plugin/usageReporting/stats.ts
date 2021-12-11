@@ -11,8 +11,11 @@ import {
   google,
   ITracesAndStats,
   IReport,
+  IReferencedFieldsForType,
 } from 'apollo-reporting-protobuf';
 import { iterateOverTrace, ResponseNamePath } from './iterateOverTrace';
+import type { DocumentNode, GraphQLSchema } from 'graphql';
+import { getReferencedFieldsByType } from './referencedFields';
 
 // protobuf.js exports both a class and an interface (starting with I) for each
 // message type. The class is what it produces when it decodes the message; the
@@ -54,13 +57,26 @@ export class OurReport implements Required<IReport> {
     trace,
     asTrace,
     includeTracesContributingToStats,
+    document,
+    schema,
+    resolvedOperationName,
   }: {
     statsReportKey: string;
     trace: Trace;
     asTrace: boolean;
     includeTracesContributingToStats: boolean;
+    // If the document is executable (parses, validates, has a good operation
+    // name) then this is included, for use in generating referenced fields.
+    document: DocumentNode | null;
+    resolvedOperationName: string | null;
+    schema: GraphQLSchema;
   }) {
-    const tracesAndStats = this.getTracesAndStats(statsReportKey);
+    const tracesAndStats = this.getTracesAndStats({
+      statsReportKey,
+      document,
+      schema,
+      resolvedOperationName,
+    });
     if (asTrace) {
       const encodedTrace = Trace.encode(trace).finish();
       tracesAndStats.trace.push(encodedTrace);
@@ -80,17 +96,41 @@ export class OurReport implements Required<IReport> {
     }
   }
 
-  private getTracesAndStats(statsReportKey: string) {
+  private getTracesAndStats({
+    statsReportKey,
+    document,
+    schema,
+    resolvedOperationName,
+  }: {
+    statsReportKey: string;
+    document: DocumentNode | null;
+    resolvedOperationName: string | null;
+    schema: GraphQLSchema;
+  }) {
     const existing = this.tracesPerQuery[statsReportKey];
     if (existing) {
       return existing;
     }
     this.sizeEstimator.bytes += estimatedBytesForString(statsReportKey);
-    return (this.tracesPerQuery[statsReportKey] = new OurTracesAndStats());
+
+    // We only calculate referenced fields for normal documents that parse and
+    // validate (parse and validation errors have stats report key starting with
+    // two # instead of one).
+    // FIXME we should cache this call.
+    const referencedFieldsByType: Record<string, IReferencedFieldsForType> =
+      document
+        ? getReferencedFieldsByType({ document, schema, resolvedOperationName })
+        : Object.create(null);
+    return (this.tracesPerQuery[statsReportKey] = new OurTracesAndStats(
+      referencedFieldsByType,
+    ));
   }
 }
 
 class OurTracesAndStats implements Required<ITracesAndStats> {
+  constructor(
+    readonly referencedFieldsByType: Record<string, IReferencedFieldsForType>,
+  ) {}
   readonly trace: Uint8Array[] = [];
   readonly statsWithContext = new StatsByContext();
   readonly internalTracesContributingToStats: Uint8Array[] = [];

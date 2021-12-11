@@ -22,7 +22,7 @@ import type {
 } from './options';
 import { dateToProtoTimestamp, TraceTreeBuilder } from '../traceTreeBuilder';
 import { makeTraceDetails } from './traceDetails';
-import { GraphQLSchema, printSchema } from 'graphql';
+import { DocumentNode, GraphQLSchema, printSchema } from 'graphql';
 import { computeCoreSchemaHash } from '../schemaReporting';
 import type { InternalApolloServerPlugin } from '../../internalPlugin';
 import { OurReport } from './stats';
@@ -561,12 +561,15 @@ export function ApolloServerPluginUsageReporting<TContext>(
               const { trace } = treeBuilder;
 
               let statsReportKey: string | undefined = undefined;
+              let documentIfExecutable: DocumentNode | null = null;
               if (!requestContext.document) {
                 statsReportKey = `## GraphQLParseFailure\n`;
               } else if (graphqlValidationFailure) {
                 statsReportKey = `## GraphQLValidationFailure\n`;
               } else if (graphqlUnknownOperationName) {
                 statsReportKey = `## GraphQLUnknownOperationName\n`;
+              } else {
+                documentIfExecutable = requestContext.document;
               }
 
               if (statsReportKey) {
@@ -596,6 +599,9 @@ export function ApolloServerPluginUsageReporting<TContext>(
                   graphMightSupportTraces &&
                   sendOperationAsTrace(trace, statsReportKey),
                 includeTracesContributingToStats,
+                document: documentIfExecutable,
+                resolvedOperationName: requestContext.operationName ?? null,
+                schema,
               });
 
               // If the buffer gets big (according to our estimate), send.
