@@ -130,7 +130,7 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
     },
   ) {
     const corsHeaders = new Headers();
-    console.info('in createHandler with cors', cors);
+    console.info('=== in createHandler with cors', cors);
     if (cors) {
       if (cors.methods) {
         if (typeof cors.methods === 'string') {
