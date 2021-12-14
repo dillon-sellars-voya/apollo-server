@@ -1,6 +1,5 @@
 {
   "name": "apollo-server-monorepo",
-  "private": true,
   "license": "MIT",
   "repository": "github:apollographql/apollo-server",
   "scripts": {
