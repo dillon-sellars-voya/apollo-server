@@ -130,7 +130,7 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
     },
   ) {
     const corsHeaders = new Headers();
-    console.log('in createHandler with cors', cors);
+    console.info('in createHandler with cors', cors);
     if (cors) {
       if (cors.methods) {
         if (typeof cors.methods === 'string') {
@@ -183,7 +183,7 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
         // Make a request-specific copy of the CORS headers, based on the server
         // global CORS headers we've set above.
         const requestCorsHeaders = new Headers(corsHeaders);
-        console.log('maybeCallbackify cors', cors);
+        console.info('maybeCallbackify cors', cors);
         if (cors && cors.origin) {
           const requestOrigin = eventHeaders.get('origin');
           if (typeof cors.origin === 'string') {
@@ -195,7 +195,7 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
                 requestOrigin &&
                 cors.origin.includes(requestOrigin)))
           ) {
-            console.log('maybeCallbackify setting access-control-allow-origin', requestOrigin);
+            console.info('maybeCallbackify setting access-control-allow-origin', requestOrigin);
             requestCorsHeaders.set(
               'access-control-allow-origin',
               requestOrigin,
@@ -224,7 +224,7 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
           return headersObject;
         }, {});
 
-        console.log('requestCorsHeadersObject', requestCorsHeadersObject);
+        console.info('requestCorsHeadersObject', requestCorsHeadersObject);
 
         if (eventHttpMethod(event) === 'OPTIONS') {
           return {
@@ -367,8 +367,8 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
                 },
               },
             );
-            console.log('returning responseInit.headers', responseInit.headers);
-            console.log('returning requestCorsHeadersObject', responseInit.headers);
+            console.info('returning responseInit.headers', responseInit.headers);
+            console.info('returning requestCorsHeadersObject', responseInit.headers);
             return {
               body: graphqlResponse,
               statusCode: 200,
@@ -380,8 +380,8 @@ export class ApolloServer<EventT extends APIGatewayProxyEventV1OrV2 = APIGateway
           } catch (error) {
             if (error.name !== 'HttpQueryError') throw error;
             const httpQueryError = error as HttpQueryError;
-            console.log('catch responseInit.headers', httpQueryError.headers);
-            console.log('catch requestCorsHeadersObject', requestCorsHeadersObject);
+            console.info('catch responseInit.headers', httpQueryError.headers);
+            console.info('catch requestCorsHeadersObject', requestCorsHeadersObject);
             return {
               body: httpQueryError.message,
               statusCode: httpQueryError.statusCode,
